@@ -17,13 +17,23 @@ class Segment(object):
                 'Duration : %s \n' % self.duration +
                 'Time to seizure : %s' % self.time_to_seizure)
 
-    def subsegment(self, start, length):
+    def subSegment(self, start, length):
         if (0 <= start) & (start < self.data.shape[1]) & (start + length <= self.data.shape[1]):
             return Segment(self.data[:, start:(start + length)],
                            self.duration * (float(length) - 1) / (float(self.data.shape[1]) - 1),
                            self.time_to_seizure - self.duration * float(start) / (float(self.data.shape[1]) - 1))
         else:
             raise Exception("incorrect subsegment bounds")
+
+    def subSegments(self, duration):
+        if duration <= self.duration:
+            length = 1 + int(duration / self.duration * (self.data.shape[1] - 1))
+            print 'Duration of the yielded segments is : %s' % (
+                (float(length) - 1) / (self.data.shape[1] - 1) * self.duration)
+            for i in xrange(self.data.shape[1] - length + 1):
+                yield self.subSegment(i, length)
+        else:
+            raise Exception("incorrect subsegments duration")
 
 
 class Subject(object):
@@ -42,7 +52,7 @@ class Subject(object):
         else:
             raise Exception("incorrect race")
 
-    def hour_segments(self, type):
+    def hourSegments(self, type):
         done = False
         i = 0
         while not done:
@@ -62,7 +72,7 @@ class Subject(object):
                     else:
                         data = np.concatenate((data, mat[name][0][0][0]), axis=1)
                 else:
-                    if i == 1:
+                    if i == 0:
                         raise Exception("file %s not found" % filename)
                     done = True
 
@@ -79,17 +89,3 @@ class Subject(object):
                 yield Segment(data, duration, time_to_seizure)
 
                 i += 1
-
-    def segments(self, type, duration):
-        for hour_segment in self.hour_segments(type):
-            length = round(duration / hour_segment.duration * hour_segment.data.shape[1])
-            break
-
-        print 'Duration of the yielded segments is : %s' % (
-            (length - 1) / (hour_segment.data.shape[1] - 1) * hour_segment.duration)
-
-        for hour_segment in self.hour_segments(type):
-            i = 0
-            while i + length <= hour_segment.data.shape[1]:
-                yield hour_segment.subsegment(i, length)
-                i += length
