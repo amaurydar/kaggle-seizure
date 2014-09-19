@@ -1,4 +1,8 @@
 {
-  "data-dir": "../Data",
-  "data-dir_amaury": "/Users/amaury/Downloads"
+  "data-dir2": "../Data",
+  "dog_inter_time_to_seizure" : 604800,
+  "patient_inter_time_to_seizure : 14400,
+  "dog_pre_time_to_seizure" : 300,
+  "patient_pre_time_to_seizure" : 300,
+  "data-dir": "/Users/amaury/Downloads"
 }

@@ -7,13 +7,15 @@ import numpy as np
 
 
 class Segment(object):
-    def __init__(self, data, duration, time_to_seizure):
+    def __init__(self, data, duration, time_to_seizure, origin):
         self.data = data
-        self.duration = duration
-        self.time_to_seizure = time_to_seizure
+        self.duration = np.float32(duration)
+        self.time_to_seizure = np.float32(time_to_seizure)
+        self.origin = origin
 
     def __str__(self):
-        return ('Data shape : %s \n' % str(self.data.shape) +
+        return ('Origin : %s \n' % str(self.origin) +
+                'Data shape : %s \n' % str(self.data.shape) +
                 'Duration : %s \n' % self.duration +
                 'Time to seizure : %s' % self.time_to_seizure)
 
@@ -21,17 +23,20 @@ class Segment(object):
         if (0 <= start) & (start < self.data.shape[1]) & (start + length <= self.data.shape[1]):
             return Segment(self.data[:, start:(start + length)],
                            self.duration * (float(length) - 1) / (float(self.data.shape[1]) - 1),
-                           self.time_to_seizure - self.duration * float(start) / (float(self.data.shape[1]) - 1))
+                           self.time_to_seizure - self.duration * float(start) / (float(self.data.shape[1]) - 1),
+                           (self.origin[0], self.origin[1], self.origin[2], self.origin[3] + start))
         else:
             raise Exception("incorrect subsegment bounds")
 
-    def subSegments(self, duration):
+    def subSegments(self, duration, step):
         if duration <= self.duration:
-            length = 1 + int(duration / self.duration * (self.data.shape[1] - 1))
-            print 'Duration of the yielded segments is : %s' % (
-                (float(length) - 1) / (self.data.shape[1] - 1) * self.duration)
-            for i in xrange(self.data.shape[1] - length + 1):
-                yield self.subSegment(i, length)
+            duration_length = int(duration / self.duration * (self.data.shape[1] - 1))
+            step_length = int(step / self.duration * (self.data.shape[1] - 1))
+            print 'Duration, Step of the yielded segments is : %s, %s' % (
+                (float(duration_length) - 1) / (self.data.shape[1] - 1) * self.duration,
+                (float(step_length) - 1) / (self.data.shape[1] - 1) * self.duration)
+            for i in xrange(int(float(self.data.shape[1] - duration_length) / step_length) + 1):
+                yield self.subSegment(i * step_length, duration_length)
         else:
             raise Exception("incorrect subsegments duration")
 
@@ -44,13 +49,14 @@ class Subject(object):
             settings = json.load(f)
         self.dir = str(settings['data-dir']) + '/%s_%s' % (self.race, self.n)
         if race == 'Dog':
-            self.inter_time_to_seizure = float(604800)  # 1semaine
-            self.pre_time_to_seizure = float(300)  # 5min
+            self.inter_time_to_seizure = np.float32(settings['dog_inter_time_to_seizure'])  # 1semaine
+            self.pre_time_to_seizure = np.float32(settings['dog_pre_time_to_seizure'])  # 5min
         elif race == 'Patient':
-            self.inter_time_to_seizure = float(14400)  # 4h
-            self.pre_time_to_seizure = float(300)  # 5min
+            self.inter_time_to_seizure = np.float32(settings['patient_inter_time_to_seizure'])  # 4h
+            self.pre_time_to_seizure = np.float32(settings['patient_pre_time_to_seizure'])  # 5min
         else:
             raise Exception("incorrect race")
+
 
     def hourSegments(self, type):
         done = False
@@ -78,14 +84,16 @@ class Subject(object):
 
             if not done:
                 if type == 'preictal':
-                    time_to_seizure = self.pre_time_to_seizure + float(3600)
+                    time_to_seizure = self.pre_time_to_seizure
                 elif type == 'interictal':
-                    time_to_seizure = self.inter_time_to_seizure + float(3600)
+                    time_to_seizure = self.inter_time_to_seizure
                 elif type == 'test':
                     time_to_seizure = None
                 else:
                     raise Exception("incorrect data in file %s" % filename)
 
-                yield Segment(data, duration, time_to_seizure)
+                origin = (self.race, self.n, i, 0)
+
+                yield Segment(data, duration, time_to_seizure, origin)
 
                 i += 1

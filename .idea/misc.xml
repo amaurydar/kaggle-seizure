@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+<<<<<<< HEAD
   <component name="DaemonCodeAnalyzer">
     <disable_hints />
   </component>
@@ -127,5 +128,8 @@
       </state>
     </states>
   </component>
+=======
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" assert-keyword="true" jdk-15="true" project-jdk-name="Python 2.7.7 (~/anaconda/bin/python)" project-jdk-type="Python SDK" />
+>>>>>>> 31edb599814e43406b3edc115ac1e0cf46d5da90
 </project>
 
